@@ -1,5 +1,6 @@
 "use client"
 
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
@@ -21,7 +22,12 @@ export default function Home() {
 
   return (
   <div>
-    <h1>Bienvenue sur CyberQuiz</h1>
+    <Alert className="max-w-xl mx-auto mt-4">
+  <AlertTitle>Bienvenue sur CyberQuiz</AlertTitle>
+  <AlertDescription>
+    Préparez-vous à tester vos connaissances !
+  </AlertDescription>
+</Alert>
 
     {question ? (
   <Card className="max-w-xl mx-auto mt-6">
