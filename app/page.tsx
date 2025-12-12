@@ -17,6 +17,8 @@ export default function Home() {
   const [couleurAlerte, setCouleurAlerte] = useState("");
   const [score, setScore] = useState(0);
 
+  const [questionsRatees, setQuestionsRatees] = useState<any[]>([]);
+
   // TIMER
   const [timeLeft, setTimeLeft] = useState(10);
   const [timerActif, setTimerActif] = useState(true);
@@ -56,7 +58,7 @@ export default function Home() {
   // Reset timer à chaque nouvelle question
   useEffect(() => {
     setTimeLeft(10);
-    setTimerActif(true); // IMPORTANT :)
+    setTimerActif(true);
   }, [questionIndex]);
 
   // Timer
@@ -65,6 +67,15 @@ export default function Home() {
 
     if (timeLeft === 0) {
       setTimerActif(false);
+
+      // Ajouter question ratée
+      setQuestionsRatees((prev) => [
+        ...prev,
+        {
+          question: question.texte,
+          explication: question.explication || "Vous n'avez pas répondu à temps."
+        }
+      ]);
 
       setAfficherExplication(true);
       setTitreExplication("Temps écoulé !");
@@ -91,7 +102,7 @@ export default function Home() {
 
     const estBonneReponse = reponse.est_correcte;
 
-    setTimerActif(false); // STOP TIMER
+    setTimerActif(false);
 
     const titre = estBonneReponse ? "Bonne réponse !" : "Mauvaise réponse.";
     const explicationTexte = question.explication || titre;
@@ -107,6 +118,16 @@ export default function Home() {
 
     setAfficherExplication(true);
 
+    if (!estBonneReponse) {
+      setQuestionsRatees((prev) => [
+        ...prev,
+        {
+          question: question.texte,
+          explication: question.explication || "Pas d'explication disponible."
+        }
+      ]);
+    }
+
     setTimeout(() => {
       setAfficherExplication(false);
       setTitreExplication("");
@@ -118,14 +139,45 @@ export default function Home() {
     }, 4000);
   }
 
+  // Fonction pour rejouer
+  function resetQuiz() {
+    setQuestionIndex(0);
+    setScore(0);
+    setQuestionsRatees([]);
+    setTimeLeft(10);
+    setTimerActif(true);
+  }
+
   // Quiz terminé
   if (!question) {
     return (
       <div className="text-center mt-10">
         <h2 className="text-2xl font-bold">Quiz terminé !</h2>
+
         <p className="mt-4 text-lg">
           Score final : <span className="font-bold">{score}</span> / {questions.length}
         </p>
+
+        {/* Questions ratées */}
+        {questionsRatees.length > 0 ? (
+          <div className="mt-10 max-w-2xl mx-auto text-left">
+            <h3 className="text-xl font-semibold mb-4">Questions mal répondues :</h3>
+
+            {questionsRatees.map((item, index) => (
+              <div key={index} className="mb-6 p-4 border rounded bg-red-50">
+                <p className="font-bold">❌ {item.question}</p>
+                <p className="mt-2 text-sm text-gray-700">{item.explication}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-6 text-green-600 font-semibold">👏 Aucune erreur, bravo !</p>
+        )}
+
+        {/* Bouton rejouer */}
+        <Button className="mt-6" onClick={resetQuiz}>
+          Rejouer le quiz
+        </Button>
       </div>
     );
   }
@@ -195,10 +247,8 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
 
-              {/* TIMER */}
               <p className="text-right text-sm mb-2">
-                Temps restant :{" "}
-                <span className="font-bold">{timeLeft}s</span>
+                Temps restant : <span className="font-bold">{timeLeft}s</span>
               </p>
 
               <CardContent className="p-0">
