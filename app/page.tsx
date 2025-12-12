@@ -16,6 +16,7 @@ export default function Home() {
   const [afficherExplication, setAfficherExplication] = useState(false);
   const [couleurAlerte, setCouleurAlerte] = useState("");
   const [score, setScore] = useState(0);
+  const [joueurNom, setJoueurNom] = useState("");
 
   const [questionsRatees, setQuestionsRatees] = useState<any[]>([]);
 
@@ -24,6 +25,28 @@ export default function Home() {
   const [timerActif, setTimerActif] = useState(true);
 
   const question = questions[questionIndex];
+  const [joueurPret, setJoueurPret] = useState(false);
+
+useEffect(() => {
+  // On ne lance la récupération que si joueurPret est passé à 'true'
+  if (joueurPret) {
+    const userId = localStorage.getItem("supabase_user_id");
+    if (userId) {
+      supabase
+        .from("joueur")
+        .select("pseudo")
+        .eq("user_id", userId)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Erreur lors de la récupération du joueur :", error);
+          } else if (data) {
+            setJoueurNom(data.pseudo);
+          }
+        });
+    }
+  }
+}, []); 
 
   // Charger les questions depuis Supabase
   useEffect(() => {
