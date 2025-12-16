@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Home() {
   const [questions, setQuestions] = useState<any[]>([]);
@@ -16,15 +15,20 @@ export default function Home() {
   const [afficherExplication, setAfficherExplication] = useState(false);
   const [couleurAlerte, setCouleurAlerte] = useState("");
   const [score, setScore] = useState(0);
-
   const [questionsRatees, setQuestionsRatees] = useState<any[]>([]);
-
   const [timeLeft, setTimeLeft] = useState(10);
   const [timerActif, setTimerActif] = useState(false);
   const [joueurPret, setJoueurPret] = useState(false);
 
   const question = questions[questionIndex];
 
+  /* ===== PROGRESSION PAR SCORE ===== */
+  const scoreProgression =
+    questionIndex > 0
+      ? Math.round((score / questionIndex) * 100)
+      : 0;
+
+  /* ===== FETCH QUESTIONS ===== */
   useEffect(() => {
     async function fetchQuestion() {
       const { data } = await supabase
@@ -50,12 +54,14 @@ export default function Home() {
     fetchQuestion();
   }, []);
 
+  /* ===== TIMER RESET ===== */
   useEffect(() => {
     if (!joueurPret) return;
     setTimeLeft(10);
     setTimerActif(true);
   }, [questionIndex, joueurPret]);
 
+  /* ===== TIMER ===== */
   useEffect(() => {
     if (!question || !timerActif || !joueurPret) return;
 
@@ -64,7 +70,7 @@ export default function Home() {
 
       setQuestionsRatees((prev) => [
         ...prev,
-        { question: question.texte, explication: question.explication }
+        { question: question.texte, explication: question.explication },
       ]);
 
       setTitreExplication("Temps écoulé");
@@ -83,6 +89,7 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [timeLeft, question, timerActif, joueurPret]);
 
+  /* ===== CLICK ===== */
   function handleClick(reponse: any) {
     if (afficherExplication) return;
 
@@ -100,7 +107,7 @@ export default function Home() {
     if (!bonne) {
       setQuestionsRatees((prev) => [
         ...prev,
-        { question: question.texte, explication: question.explication }
+        { question: question.texte, explication: question.explication },
       ]);
     }
 
@@ -126,11 +133,9 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center mt-24">
         <Alert className="max-w-xl bg-emerald-50 border-emerald-400 text-emerald-900 mb-6">
-          <AlertTitle className="text-2xl font-bold">
-            CyberQuiz
-          </AlertTitle>
+          <AlertTitle className="text-2xl font-bold">CyberQuiz</AlertTitle>
           <AlertDescription>
-            Quiz chronométré en cybersécurité
+            Quiz chronométré en cybersécurité fait par Maxence Charles, élève BTS SIO 1ère année
           </AlertDescription>
         </Alert>
 
@@ -139,7 +144,7 @@ export default function Home() {
           className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={() => setJoueurPret(true)}
         >
-          🚀 Commencer le quiz
+          Commencer le quiz
         </Button>
       </div>
     );
@@ -171,7 +176,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="mt-6 text-emerald-600 font-semibold">
-            Aucune erreur 🎉
+            Aucune erreur 
           </p>
         )}
 
@@ -206,6 +211,23 @@ export default function Home() {
         </div>
 
         <div className="w-1/2 p-4">
+          {/* PROGRESSION PAR SCORE */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm text-slate-600 mb-1">
+              <span>
+                Score : {score} / {questionIndex || 1}
+              </span>
+              <span>{scoreProgression}%</span>
+            </div>
+
+            <div className="w-full h-2 bg-slate-200 rounded">
+              <div
+                className="h-2 bg-emerald-500 rounded transition-all duration-300"
+                style={{ width: `${scoreProgression}%` }}
+              />
+            </div>
+          </div>
+
           <CardHeader className="p-0 mb-3">
             <CardTitle className="text-emerald-700">
               Question {questionIndex + 1}
