@@ -16,42 +16,18 @@ export default function Home() {
   const [afficherExplication, setAfficherExplication] = useState(false);
   const [couleurAlerte, setCouleurAlerte] = useState("");
   const [score, setScore] = useState(0);
-  const [joueurNom, setJoueurNom] = useState("");
 
   const [questionsRatees, setQuestionsRatees] = useState<any[]>([]);
 
-  // TIMER
   const [timeLeft, setTimeLeft] = useState(10);
-  const [timerActif, setTimerActif] = useState(true);
-
-  const question = questions[questionIndex];
+  const [timerActif, setTimerActif] = useState(false);
   const [joueurPret, setJoueurPret] = useState(false);
 
-useEffect(() => {
-  // On ne lance la récupération que si joueurPret est passé à 'true'
-  if (joueurPret) {
-    const userId = localStorage.getItem("supabase_user_id");
-    if (userId) {
-      supabase
-        .from("joueur")
-        .select("pseudo")
-        .eq("user_id", userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Erreur lors de la récupération du joueur :", error);
-          } else if (data) {
-            setJoueurNom(data.pseudo);
-          }
-        });
-    }
-  }
-}, []); 
+  const question = questions[questionIndex];
 
-  // Charger les questions depuis Supabase
   useEffect(() => {
     async function fetchQuestion() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("question")
         .select(`
           id,
@@ -63,245 +39,209 @@ useEffect(() => {
           reponses:reponse (
             id,
             texte,
-            est_correcte 
+            est_correcte
           )
         `)
         .order("id", { ascending: true });
 
-      if (error) {
-        console.error("Erreur Supabase :", error);
-      } else {
-        setQuestions(data || []);
-      }
+      setQuestions(data || []);
     }
 
     fetchQuestion();
   }, []);
 
-  // Reset timer à chaque nouvelle question
   useEffect(() => {
+    if (!joueurPret) return;
     setTimeLeft(10);
     setTimerActif(true);
-  }, [questionIndex]);
+  }, [questionIndex, joueurPret]);
 
-  // Timer
   useEffect(() => {
-    if (!question || !timerActif) return;
+    if (!question || !timerActif || !joueurPret) return;
 
     if (timeLeft === 0) {
       setTimerActif(false);
 
-      // Ajouter question ratée
       setQuestionsRatees((prev) => [
         ...prev,
-        {
-          question: question.texte,
-          explication: question.explication || "Vous n'avez pas répondu à temps."
-        }
+        { question: question.texte, explication: question.explication }
       ]);
 
-      setAfficherExplication(true);
-      setTitreExplication("Temps écoulé !");
+      setTitreExplication("Temps écoulé");
       setExplication("Vous n'avez pas répondu à temps.");
-      setCouleurAlerte("bg-red-50 border-red-300 text-red-800");
+      setCouleurAlerte("bg-rose-50 border-rose-400 text-rose-800");
+      setAfficherExplication(true);
 
       setTimeout(() => {
         setAfficherExplication(false);
         setQuestionIndex((prev) => prev + 1);
       }, 3000);
-
       return;
     }
 
-    const timer = setTimeout(() => {
-      setTimeLeft((t) => t - 1);
-    }, 1000);
-
+    const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(timer);
-  }, [timeLeft, question, timerActif]);
+  }, [timeLeft, question, timerActif, joueurPret]);
 
   function handleClick(reponse: any) {
-    if (!question || afficherExplication || timeLeft === 0) return;
-
-    const estBonneReponse = reponse.est_correcte;
+    if (afficherExplication) return;
 
     setTimerActif(false);
+    const bonne = reponse.est_correcte;
 
-    const titre = estBonneReponse ? "Bonne réponse !" : "Mauvaise réponse.";
-    const explicationTexte = question.explication || titre;
-
-    setTitreExplication(titre);
-    setExplication(explicationTexte);
-
+    setTitreExplication(bonne ? "Bonne réponse" : "Mauvaise réponse");
+    setExplication(question.explication || "");
     setCouleurAlerte(
-      estBonneReponse
-        ? "bg-green-50 border-green-300 text-green-800"
-        : "bg-red-50 border-red-300 text-red-800"
+      bonne
+        ? "bg-emerald-50 border-emerald-400 text-emerald-800"
+        : "bg-rose-50 border-rose-400 text-rose-800"
     );
 
-    setAfficherExplication(true);
-
-    if (!estBonneReponse) {
+    if (!bonne) {
       setQuestionsRatees((prev) => [
         ...prev,
-        {
-          question: question.texte,
-          explication: question.explication || "Pas d'explication disponible."
-        }
+        { question: question.texte, explication: question.explication }
       ]);
     }
 
+    setAfficherExplication(true);
+
     setTimeout(() => {
       setAfficherExplication(false);
-      setTitreExplication("");
-      setExplication("");
-
-      if (estBonneReponse) setScore((prev) => prev + 1);
-
-      setQuestionIndex((prev) => prev + 1);
-    }, 4000);
+      if (bonne) setScore((s) => s + 1);
+      setQuestionIndex((i) => i + 1);
+    }, 3500);
   }
 
-  // Fonction pour rejouer
   function resetQuiz() {
     setQuestionIndex(0);
     setScore(0);
     setQuestionsRatees([]);
-    setTimeLeft(10);
-    setTimerActif(true);
+    setTimerActif(false);
+    setJoueurPret(false);
   }
 
-  // Quiz terminé
-  if (!question) {
+  /* ===== ACCUEIL ===== */
+  if (!joueurPret) {
     return (
-      <div className="text-center mt-10">
-        <h2 className="text-2xl font-bold">Quiz terminé !</h2>
+      <div className="flex flex-col items-center justify-center mt-24">
+        <Alert className="max-w-xl bg-emerald-50 border-emerald-400 text-emerald-900 mb-6">
+          <AlertTitle className="text-2xl font-bold">
+            CyberQuiz
+          </AlertTitle>
+          <AlertDescription>
+            Quiz chronométré en cybersécurité
+          </AlertDescription>
+        </Alert>
 
-        <p className="mt-4 text-lg">
-          Score final : <span className="font-bold">{score}</span> / {questions.length}
-        </p>
-
-        {/* Questions ratées */}
-        {questionsRatees.length > 0 ? (
-          <div className="mt-10 max-w-2xl mx-auto text-left">
-            <h3 className="text-xl font-semibold mb-4">Questions mal répondues :</h3>
-
-            {questionsRatees.map((item, index) => (
-              <div key={index} className="mb-6 p-4 border rounded bg-red-50">
-                <p className="font-bold">❌ {item.question}</p>
-                <p className="mt-2 text-sm text-gray-700">{item.explication}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-6 text-green-600 font-semibold">👏 Aucune erreur, bravo !</p>
-        )}
-
-        {/* Bouton rejouer */}
-        <Button className="mt-6" onClick={resetQuiz}>
-          Rejouer le quiz
+        <Button
+          size="lg"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => setJoueurPret(true)}
+        >
+          🚀 Commencer le quiz
         </Button>
       </div>
     );
   }
 
-  return (
-    <div>
-      <Alert className="bg-blue-50 border-blue-300 text-blue-800 max-w-xl mx-auto mt-6">
-        <AlertTitle className="text-xl font-semibold">Bienvenue sur CyberQuiz</AlertTitle>
-        <AlertDescription>
-          Un quiz pour tester vos connaissances en cybersécurité.
-        </AlertDescription>
-      </Alert>
+  /* ===== FIN ===== */
+  if (!question) {
+    return (
+      <div className="text-center mt-16">
+        <h2 className="text-3xl font-bold text-emerald-700">
+          Quiz terminé
+        </h2>
 
-      <Alert className="bg-purple-50 border-purple-300 text-purple-800 max-w-xl mx-auto mt-6">
-        <AlertTitle className="text-xl font-semibold">Score</AlertTitle>
-        <AlertDescription>
-          {score} bonne(s) réponse(s) sur {questions.length}
-        </AlertDescription>
-      </Alert>
+        <p className="mt-4 text-lg">
+          Score : <b>{score}</b> / {questions.length}
+        </p>
 
-      {questions.length > 0 ? (
-        <Card className="max-w-4xl mx-auto mt-6">
-          <div className="flex">
-
-            {/* Colonne gauche */}
-            <div className="w-1/2 p-4">
-              {question.image_url ? (
-                <Image
-                  src={question.image_url}
-                  alt="Illustration de la question"
-                  width={400}
-                  height={300}
-                  className="rounded"
-                />
-              ) : (
-                <div className="w-full h-[300px] bg-gray-100 flex items-center justify-center text-sm text-gray-500 rounded">
-                  Aucune image disponible
-                </div>
-              )}
-
-              {question.image_credit_nom && question.image_credit_url && (
-                <Alert className="mt-4 text-sm text-muted-foreground">
-                  <AlertDescription>
-                    <span className="inline">
-                      Image :{" "}
-                      <Link
-                        href={question.image_credit_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline underline-offset-2 hover:text-primary"
-                      >
-                        {question.image_credit_nom}
-                      </Link>
-                    </span>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            {/* Colonne droite */}
-            <div className="w-1/2 p-4">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle>
-                  <p className="text-sm mb-2">
-                    Question {questionIndex + 1} sur {questions.length}
-                  </p>
-                </CardTitle>
-              </CardHeader>
-
-              <p className="text-right text-sm mb-2">
-                Temps restant : <span className="font-bold">{timeLeft}s</span>
-              </p>
-
-              <CardContent className="p-0">
-                <p className="text-lg font-semibold mb-4">{question.texte}</p>
-
-                {question.reponses.map((reponse: any) => (
-                  <Button
-                    key={reponse.id}
-                    onClick={() => handleClick(reponse)}
-                    disabled={afficherExplication || timeLeft === 0}
-                    className="w-full justify-start mt-2"
-                    variant="outline"
-                  >
-                    {reponse.texte}
-                  </Button>
-                ))}
-              </CardContent>
-
-              {afficherExplication && (
-                <Alert className={`mt-6 ${couleurAlerte}`}>
-                  <AlertTitle className="font-bold">{titreExplication}</AlertTitle>
-                  <AlertDescription>{explication}</AlertDescription>
-                </Alert>
-              )}
-            </div>
+        {questionsRatees.length > 0 ? (
+          <div className="mt-10 max-w-2xl mx-auto">
+            {questionsRatees.map((q, i) => (
+              <div
+                key={i}
+                className="mb-4 p-4 border border-rose-300 bg-rose-50 rounded"
+              >
+                <p className="font-bold text-rose-700">{q.question}</p>
+                <p className="text-sm mt-2">{q.explication}</p>
+              </div>
+            ))}
           </div>
-        </Card>
-      ) : (
-        <p className="text-center mt-6">Chargement des questions...</p>
-      )}
-    </div>
+        ) : (
+          <p className="mt-6 text-emerald-600 font-semibold">
+            Aucune erreur 🎉
+          </p>
+        )}
+
+        <Button
+          className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={resetQuiz}
+        >
+          Rejouer
+        </Button>
+      </div>
+    );
+  }
+
+  /* ===== QUIZ ===== */
+  return (
+    <Card className="max-w-4xl mx-auto mt-10 border-emerald-300">
+      <div className="flex">
+        <div className="w-1/2 p-4">
+          {question.image_url ? (
+            <Image
+              src={question.image_url}
+              alt="Illustration"
+              width={400}
+              height={300}
+              className="rounded"
+            />
+          ) : (
+            <div className="h-[300px] bg-slate-100 flex items-center justify-center rounded">
+              Pas d’image
+            </div>
+          )}
+        </div>
+
+        <div className="w-1/2 p-4">
+          <CardHeader className="p-0 mb-3">
+            <CardTitle className="text-emerald-700">
+              Question {questionIndex + 1}
+            </CardTitle>
+          </CardHeader>
+
+          <p className="text-right text-sm text-slate-600 mb-2">
+            ⏱ {timeLeft}s
+          </p>
+
+          <CardContent className="p-0">
+            <p className="text-lg font-semibold mb-4">
+              {question.texte}
+            </p>
+
+            {question.reponses.map((r: any) => (
+              <Button
+                key={r.id}
+                onClick={() => handleClick(r)}
+                disabled={afficherExplication}
+                className="w-full mt-2 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                variant="outline"
+              >
+                {r.texte}
+              </Button>
+            ))}
+          </CardContent>
+
+          {afficherExplication && (
+            <Alert className={`mt-6 ${couleurAlerte}`}>
+              <AlertTitle>{titreExplication}</AlertTitle>
+              <AlertDescription>{explication}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
