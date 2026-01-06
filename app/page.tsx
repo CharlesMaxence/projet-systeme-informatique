@@ -21,7 +21,7 @@ export default function Home() {
   const [joueurPret, setJoueurPret] = useState(false);
 
   const question = questions[questionIndex];
-
+  
   /* ===== PROGRESSION ===== */
   const scoreProgression =
     questionIndex > 0
