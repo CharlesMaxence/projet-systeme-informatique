@@ -22,11 +22,23 @@ export default function Home() {
 
   const question = questions[questionIndex];
 
-  /* ===== PROGRESSION PAR SCORE ===== */
+  /* ===== PROGRESSION ===== */
   const scoreProgression =
     questionIndex > 0
       ? Math.round((score / questionIndex) * 100)
       : 0;
+
+  /* ===== INCREMENT NBRFAUTES ===== */
+  async function incrementNbrFautes(questionId: number, currentValue: number) {
+    const { error } = await supabase
+      .from("question")
+      .update({ nbrfautes: currentValue + 1 })
+      .eq("id", questionId);
+
+    if (error) {
+      console.error("Erreur Supabase nbrfautes :", error);
+    }
+  }
 
   /* ===== FETCH QUESTIONS ===== */
   useEffect(() => {
@@ -40,6 +52,7 @@ export default function Home() {
           image_credit_nom,
           image_credit_url,
           explication,
+          nbrfautes,
           reponses:reponse (
             id,
             texte,
@@ -78,10 +91,13 @@ export default function Home() {
       setCouleurAlerte("bg-rose-50 border-rose-400 text-rose-800");
       setAfficherExplication(true);
 
+      incrementNbrFautes(question.id, question.nbrfautes);
+
       setTimeout(() => {
         setAfficherExplication(false);
         setQuestionIndex((prev) => prev + 1);
       }, 3000);
+
       return;
     }
 
@@ -109,6 +125,8 @@ export default function Home() {
         ...prev,
         { question: question.texte, explication: question.explication },
       ]);
+
+      incrementNbrFautes(question.id, question.nbrfautes);
     }
 
     setAfficherExplication(true);
@@ -135,7 +153,8 @@ export default function Home() {
         <Alert className="max-w-xl bg-emerald-50 border-emerald-400 text-emerald-900 mb-6">
           <AlertTitle className="text-2xl font-bold">CyberQuiz</AlertTitle>
           <AlertDescription>
-            Quiz chronométré en cybersécurité fait par Maxence Charles, élève BTS SIO 1ère année
+            Quiz chronométré en cybersécurité fait par Maxence Charles, élève BTS
+            SIO 1ère année
           </AlertDescription>
         </Alert>
 
@@ -176,7 +195,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="mt-6 text-emerald-600 font-semibold">
-            Aucune erreur 
+            Aucune erreur
           </p>
         )}
 
@@ -211,7 +230,6 @@ export default function Home() {
         </div>
 
         <div className="w-1/2 p-4">
-          {/* PROGRESSION PAR SCORE */}
           <div className="mb-4">
             <div className="flex justify-between text-sm text-slate-600 mb-1">
               <span>
