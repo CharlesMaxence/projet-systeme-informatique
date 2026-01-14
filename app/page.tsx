@@ -21,12 +21,10 @@ export default function Home() {
   const [joueurPret, setJoueurPret] = useState(false);
 
   const question = questions[questionIndex];
-  
+
   /* ===== PROGRESSION ===== */
   const scoreProgression =
-    questionIndex > 0
-      ? Math.round((score / questionIndex) * 100)
-      : 0;
+    questionIndex > 0 ? Math.round((score / questionIndex) * 100) : 0;
 
   /* ===== INCREMENT NBRFAUTES ===== */
   async function incrementNbrFautes(questionId: number, currentValue: number) {
@@ -149,11 +147,11 @@ export default function Home() {
   /* ===== ACCUEIL ===== */
   if (!joueurPret) {
     return (
-      <div className="flex flex-col items-center justify-center mt-24">
+      <div className="flex flex-col items-center justify-center mt-24 px-4">
         <Alert className="max-w-xl bg-emerald-50 border-emerald-400 text-emerald-900 mb-6">
           <AlertTitle className="text-2xl font-bold">CyberQuiz</AlertTitle>
           <AlertDescription>
-            Quiz chronométré en cybersécurité fait par Maxence Charles, élève BTS
+            Quiz chronométré en cybersécurité de 21 questions fait par Maxence Charles, élève BTS
             SIO 1ère année
           </AlertDescription>
         </Alert>
@@ -165,6 +163,31 @@ export default function Home() {
         >
           Commencer le quiz
         </Button>
+
+        {/* ===== STATISTIQUES DES FAUTES ===== */}
+        {questions.length > 0 && (
+          <div className="mt-10 max-w-xl w-full">
+            <h3 className="text-xl font-bold text-slate-700 mb-4 text-center">
+              Statistiques des fautes par question(actualiser la page pour mettre à jour)
+            </h3>
+
+            <div className="space-y-2">
+              {questions.map((q, index) => (
+                <div
+                  key={q.id}
+                  className="flex justify-between items-center p-3 border rounded bg-slate-50"
+                >
+                  <span className="font-medium">
+                    Question {index + 1}
+                  </span>
+                  <span className="text-rose-700 font-bold">
+                    {q.nbrfautes} faute{q.nbrfautes > 1 ? "s" : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -200,7 +223,7 @@ export default function Home() {
         )}
 
         <Button
-          className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+          className="mt-8 bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={resetQuiz}
         >
           Rejouer
