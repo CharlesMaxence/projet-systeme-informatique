@@ -28,15 +28,26 @@ export default function Home() {
 
   /* ===== INCREMENT NBRFAUTES ===== */
   async function incrementNbrFautes(questionId: number, currentValue: number) {
-    const { error } = await supabase
-      .from("question")
-      .update({ nbrfautes: currentValue + 1 })
-      .eq("id", questionId);
+  const { error } = await supabase
+    .from("question")
+    .update({ nbrfautes: currentValue + 1 })
+    .eq("id", questionId);
 
-    if (error) {
-      console.error("Erreur Supabase nbrfautes :", error);
-    }
+  if (error) {
+    console.error("Erreur Supabase nbrfautes :", error);
+    return;
   }
+
+  // 🔥 mise à jour du state local
+  setQuestions((prev) =>
+    prev.map((q) =>
+      q.id === questionId
+        ? { ...q, nbrfautes: q.nbrfautes + 1 }
+        : q
+    )
+  );
+}
+
 
   /* ===== FETCH QUESTIONS ===== */
   useEffect(() => {
