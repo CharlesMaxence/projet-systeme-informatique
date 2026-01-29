@@ -200,7 +200,7 @@ export default function Home() {
             CyberQuiz
           </AlertTitle>
           <AlertDescription>
-            Quiz chronométré en cybersécurité de 21 questions fait par Maxence Charles, élève BTS
+            Quiz chronométré en cybersécurité de 20 questions fait par Maxence Charles, élève BTS
             SIO 1ère année
           </AlertDescription>
         </Alert>
