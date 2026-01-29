@@ -19,6 +19,8 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState(10);
   const [timerActif, setTimerActif] = useState(false);
   const [joueurPret, setJoueurPret] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const [showResetButton, setShowResetButton] = useState(false);
 
   const question = questions[questionIndex];
 
@@ -27,27 +29,50 @@ export default function Home() {
     questionIndex > 0 ? Math.round((score / questionIndex) * 100) : 0;
 
   /* ===== INCREMENT NBRFAUTES ===== */
-  async function incrementNbrFautes(questionId: number, currentValue: number) {
-  const { error } = await supabase
-    .from("question")
-    .update({ nbrfautes: currentValue + 1 })
-    .eq("id", questionId);
+  async function incrementNbrFautes(questionId: number) {
+    const { data, error } = await supabase.rpc("increment_nbrfautes", {
+      qid: questionId,
+    });
 
-  if (error) {
-    console.error("Erreur Supabase nbrfautes :", error);
-    return;
+    if (error) {
+      console.error("Erreur Supabase nbrfautes :", error);
+      return;
+    }
+
+    console.log("nbrfautes incrémenté avec succès", data);
+
+    // mise à jour locale
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === questionId
+          ? { ...q, nbrfautes: (q.nbrfautes || 0) + 1 }
+          : q
+      )
+    );
   }
 
-  // 🔥 mise à jour du state local
-  setQuestions((prev) =>
-    prev.map((q) =>
-      q.id === questionId
-        ? { ...q, nbrfautes: q.nbrfautes + 1 }
-        : q
-    )
-  );
-}
+  /* ===== RESET NBRFAUTES ===== */
+  async function resetAllNbrFautes() {
+    const { error } = await supabase
+      .from("question")
+      .update({ nbrfautes: 0 })
+      .neq("id", 0); // Update all rows
 
+    if (error) {
+      console.error("Erreur lors de la réinitialisation :", error);
+      alert("Erreur lors de la réinitialisation des statistiques");
+      return;
+    }
+
+    // Mise à jour locale
+    setQuestions((prev) =>
+      prev.map((q) => ({ ...q, nbrfautes: 0 }))
+    );
+
+    alert("Toutes les statistiques ont été réinitialisées à 0");
+    setShowResetButton(false);
+    setClickCount(0);
+  }
 
   /* ===== FETCH QUESTIONS ===== */
   useEffect(() => {
@@ -100,7 +125,7 @@ export default function Home() {
       setCouleurAlerte("bg-rose-50 border-rose-400 text-rose-800");
       setAfficherExplication(true);
 
-      incrementNbrFautes(question.id, question.nbrfautes);
+      incrementNbrFautes(question.id);
 
       setTimeout(() => {
         setAfficherExplication(false);
@@ -135,7 +160,7 @@ export default function Home() {
         { question: question.texte, explication: question.explication },
       ]);
 
-      incrementNbrFautes(question.id, question.nbrfautes);
+      incrementNbrFautes(question.id);
     }
 
     setAfficherExplication(true);
@@ -155,12 +180,25 @@ export default function Home() {
     setJoueurPret(false);
   }
 
+  /* ===== HIDDEN RESET TRIGGER ===== */
+  function handleTitleClick() {
+    setClickCount((prev) => prev + 1);
+    if (clickCount + 1 >= 5) {
+      setShowResetButton(true);
+    }
+  }
+
   /* ===== ACCUEIL ===== */
   if (!joueurPret) {
     return (
       <div className="flex flex-col items-center justify-center mt-24 px-4">
         <Alert className="max-w-xl bg-emerald-50 border-emerald-400 text-emerald-900 mb-6">
-          <AlertTitle className="text-2xl font-bold">CyberQuiz</AlertTitle>
+          <AlertTitle 
+            className="text-2xl font-bold cursor-pointer select-none"
+            onClick={handleTitleClick}
+          >
+            CyberQuiz
+          </AlertTitle>
           <AlertDescription>
             Quiz chronométré en cybersécurité de 21 questions fait par Maxence Charles, élève BTS
             SIO 1ère année
@@ -175,11 +213,23 @@ export default function Home() {
           Commencer le quiz
         </Button>
 
+        {/* ===== BOUTON RESET CACHÉ ===== */}
+        {showResetButton && (
+          <Button
+            size="sm"
+            variant="destructive"
+            className="mt-4"
+            onClick={resetAllNbrFautes}
+          >
+            🔄 Réinitialiser toutes les statistiques
+          </Button>
+        )}
+
         {/* ===== STATISTIQUES DES FAUTES ===== */}
         {questions.length > 0 && (
           <div className="mt-10 max-w-xl w-full">
             <h3 className="text-xl font-bold text-slate-700 mb-4 text-center">
-              Statistiques des fautes par question(actualiser la page pour mettre à jour)
+              Statistiques des fautes par question (actualiser la page pour mettre à jour)
             </h3>
 
             <div className="space-y-2">
@@ -192,7 +242,7 @@ export default function Home() {
                     Question {index + 1}
                   </span>
                   <span className="text-rose-700 font-bold">
-                    {q.nbrfautes} faute{q.nbrfautes > 1 ? "s" : ""}
+                    {q.nbrfautes || 0} faute{(q.nbrfautes || 0) > 1 ? "s" : ""}
                   </span>
                 </div>
               ))}
@@ -258,7 +308,7 @@ export default function Home() {
             />
           ) : (
             <div className="h-[300px] bg-slate-100 flex items-center justify-center rounded">
-              Pas d’image
+              Pas d'image
             </div>
           )}
         </div>
