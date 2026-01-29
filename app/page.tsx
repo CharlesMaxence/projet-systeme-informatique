@@ -299,13 +299,32 @@ export default function Home() {
       <div className="flex">
         <div className="w-1/2 p-4">
           {question.image_url ? (
-            <Image
-              src={question.image_url}
-              alt="Illustration"
-              width={400}
-              height={300}
-              className="rounded"
-            />
+            <div>
+              <Image
+                src={question.image_url}
+                alt="Illustration"
+                width={400}
+                height={300}
+                className="rounded"
+              />
+              {question.image_credit_nom && (
+                <p className="text-xs text-slate-500 mt-2">
+                  Crédit image :{" "}
+                  {question.image_credit_url ? (
+                    <a
+                      href={question.image_credit_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-slate-700"
+                    >
+                      {question.image_credit_nom}
+                    </a>
+                  ) : (
+                    question.image_credit_nom
+                  )}
+                </p>
+              )}
+            </div>
           ) : (
             <div className="h-[300px] bg-slate-100 flex items-center justify-center rounded">
               Pas d'image
