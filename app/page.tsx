@@ -204,6 +204,16 @@ export default function Home() {
             SIO 1ère année
           </AlertDescription>
         </Alert>
+        <Alert className="max-w-xl bg-emerald-50 border-red-400 text-emerald-900 mb-6">
+          <AlertTitle>
+            Important
+          </AlertTitle>
+          <AlertDescription>
+            La sécurité du service informatique du lycée est important pour éviter tout problèmes.<br></br><br></br>
+            Ce quiz a pour objectif de trouver les points sur lequel les élèves du lycée ont moins de compréhension au niveau de la sécurité informatiques.<br></br><br></br>
+            Ceci est un sujet important au niveau du lycée.
+          </AlertDescription>
+        </Alert>
 
         <Button
           size="lg"
@@ -221,7 +231,7 @@ export default function Home() {
             className="mt-4"
             onClick={resetAllNbrFautes}
           >
-            🔄 Réinitialiser toutes les statistiques
+            Réinitialiser toutes les statistiques
           </Button>
         )}
 
